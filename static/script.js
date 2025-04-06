@@ -82,15 +82,6 @@ function startTimer(seconds, redirectURL) {
     }, 1000);
 }
 
-function submitData() {
-    //const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    //onst url = URL.createObjectURL(blob);
-    //const link = document.createElement("a");
-    //link.href = url;
-    //link.download = "response_data.json";
-    //link.click();
-    saveData();
-}
 
 function getProlificId(){
     const urlParams = new URL(location.href).searchParams;
@@ -98,25 +89,39 @@ function getProlificId(){
     return urlParams.get('PROLIFIC_PID')
 }
 
-function saveData() {
-    // Retrieve data from jsPsych
-    //let subject = getUrlDetails()
+
+function uploadDataWithRetry(lastTry=false, endTest=true ,retryCount = 5, delay = 1000) {
     let subject = getProlificId();
-    // Make a POST request to the Lambda function or API Gateway endpoint
-    $.ajax({
-        url: 'https://hss74dd1ed.execute-api.us-east-1.amazonaws.com/dev/',
-        type: 'POST',
-        contentType: 'application/json',
-        data: JSON.stringify({
-            "subject_id": `${subject}`,
-            "bucket": `${BUCKET_NAME}`,
-            "exp_data":  JSON.stringify(JSON.stringify(items))
-        }),
-        success: function(response) {
-            console.log('Data uploaded successfully:', response);
-        },
-        error: function(xhr, status, error) {
-            console.error('Error uploading data:', error);
+
+    return new Promise((resolve, reject) => {
+        function attemptUpload(remainingRetries) {
+            $.ajax({
+                url: 'https://hss74dd1ed.execute-api.us-east-1.amazonaws.com/dev/',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    "subject_id": `${subject}`,
+                    "bucket": `${BUCKET_NAME}`,
+                    "exp_data": JSON.stringify(JSON.stringify(items)) // no idea why it needs to double stringify, but it won't work otherwise.
+                }),
+                success: function(response) {
+                    console.log('Data uploaded successfully:', response);
+                    resolve(response); // Resolve the promise on success
+                    if(endTest) {
+                        window.location.href = getRedirectionUrl();
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error(`Error uploading data (${remainingRetries} retries left):`, error);
+                    if (remainingRetries > 0) {
+                        setTimeout(() => {
+                            attemptUpload(remainingRetries - 1); // Retry with reduced retry count
+                        }, delay);
+                    }
+                }
+            });
         }
+
+        attemptUpload(retryCount); // Start the upload process
     });
 }
