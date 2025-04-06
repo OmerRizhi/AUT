@@ -16,7 +16,21 @@
     <p>Do not enter the same item twice in one round, and do not list two items that only differentiate in suffix.
         For example if you list "guitar", do not list "guitars" in the same round.</p>
     <p>Please click the arrow to start.</p>
-    <button onclick="window.location.href='game.html'">Next →</button>
+    <button onclick="redirectToGame()">Next</button>
 </div>
+
+<script>
+    function redirectToGame() {
+        // Get the current URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+
+        // Get the current URL excluding the parameters (if any)
+        let baseUrl = 'game.html';
+
+        // Append the current URL parameters to the game page URL
+        // Redirect to the game page with the parameters
+        window.location.href = baseUrl + '?' + urlParams.toString();
+    }
+</script>
 </body>
 </html>
