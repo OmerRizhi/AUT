@@ -93,6 +93,8 @@ function submitData() {
 }
 
 function uploadDataWithRetry(lastTry=false, endTest=true ,retryCount = 5, delay = 1000) {
+    const urlParams = new URL(location.href).searchParams;
+    let prolific_id = urlParams.get('PROLIFIC_PID');
     let data = jsPsych.data.get().json(); // Get data as JSON string
 
     return new Promise((resolve, reject) => {
@@ -114,22 +116,11 @@ function uploadDataWithRetry(lastTry=false, endTest=true ,retryCount = 5, delay 
                     }
                 },
                 error: function(xhr, status, error) {
-                    let errorMessage = xhr.responseText || "Unknown Status Msg";
-                    let errorCode = xhr.status || "Unknown Status Code";
-
-                    jsPsych.data.addDataToLastTrial({"upload_error": errorMessage + " - " + errorCode});
                     console.error(`Error uploading data (${remainingRetries} retries left):`, error);
                     if (remainingRetries > 0) {
                         setTimeout(() => {
                             attemptUpload(remainingRetries - 1); // Retry with reduced retry count
                         }, delay);
-                    } else {
-                        console.error('All retry attempts failed.');
-                        if(lastTry) {
-                            downloadJSON(data, 'tol_results_' + subject); // Download data locally
-                            showErrorMessage(); // Display error message
-                        }
-                        reject(new Error('All retry attempts failed.')); // Reject the promise on failure
                     }
                 }
             });
