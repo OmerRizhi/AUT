@@ -6,13 +6,15 @@ let data = [];
 
 const urlParams = new URL(location.href).searchParams;
 
-let prolificid = urlParams.get('PROLIFIC_PID');
-let studyid = urlParams.get('STUDY_ID');
-let sessionid = urlParams.get('SESSION_ID');
-let expUrl = urlParams.get('expUrl');
-const redirectURL =  expUrl + '&PROLIFIC_PID=' + userId + '&STUDY_ID=' + studId + '&SESSION_ID=' + sessId;
-
+function getRedirectionUrl() {
+    let prolific_id = urlParams.get('PROLIFIC_PID');
+    let study_id = urlParams.get('STUDY_ID');
+    let session_id = urlParams.get('SESSION_ID');
+    let expUrl = urlParams.get('expUrl');
+    return expUrl + '&PROLIFIC_PID=' + prolific_id + '&STUDY_ID=' + study_id + '&SESSION_ID=' + session_id;
+}
 const BUCKET_NAME = "verbal-fluency-2025"
+
 
 function startGame() {
     const queryParams = new URLSearchParams(window.location.search);
@@ -63,7 +65,7 @@ function startGame() {
         });
     });
 
-    startTimer(timeLimit, redirectURL);
+    startTimer(timeLimit, getRedirectionUrl());
 }
 
 function startTimer(seconds, redirectURL) {
@@ -100,7 +102,7 @@ function uploadDataWithRetry(lastTry=false, endTest=true ,retryCount = 5, delay 
                 type: 'POST',
                 contentType: 'application/json',
                 data: JSON.stringify({
-                    "subject_id": `${prolificid}`,
+                    "subject_id": `${prolific_id}`,
                     "bucket": `${BUCKET_NAME}`,
                     "exp_data": JSON.stringify(data)
                 }),
@@ -108,7 +110,7 @@ function uploadDataWithRetry(lastTry=false, endTest=true ,retryCount = 5, delay 
                     console.log('Data uploaded successfully:', response);
                     resolve(response); // Resolve the promise on success
                     if(endTest) {
-                        window.location.href = redirectURL;
+                        window.location.href = getRedirectionUrl();
                     }
                 },
                 error: function(xhr, status, error) {
