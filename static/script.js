@@ -2,7 +2,7 @@ let startTime;
 let lastEnterTime;
 let newEnterTime;
 let currentBox = 0;
-let data = [];
+let items = [];
 
 const urlParams = new URL(location.href).searchParams;
 
@@ -13,12 +13,12 @@ function getRedirectionUrl() {
     let expUrl = urlParams.get('expUrl');
     return expUrl + '&PROLIFIC_PID=' + prolific_id + '&STUDY_ID=' + study_id + '&SESSION_ID=' + session_id;
 }
-const BUCKET_NAME = "verbal-fluency-2025"
+const BUCKET_NAME = "verbal-fluency-2025";
 
 
 function startGame() {
     const queryParams = new URLSearchParams(window.location.search);
-    const timeLimit = parseInt(queryParams.get("time")) || 120;
+    const timeLimit = parseInt(queryParams.get("time")) || 20;
 
     const inputArea = document.getElementById("input-area");
     for (let i = 0; i < 100; i++) {
@@ -44,7 +44,7 @@ function startGame() {
 
             if (e.key === "Enter" && input.value.trim()) {
                 newEnterTime = new Date().toISOString();
-                data.push({
+                items.push({
                     index: index,
                     text: input.value.trim(),
                     startTimer: lastEnterTime || input.dataset.startTyping,
@@ -83,48 +83,40 @@ function startTimer(seconds, redirectURL) {
 }
 
 function submitData() {
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "response_data.json";
-    link.click();
-    uploadDataWithRetry();
+    //const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    //onst url = URL.createObjectURL(blob);
+    //const link = document.createElement("a");
+    //link.href = url;
+    //link.download = "response_data.json";
+    //link.click();
+    saveData();
 }
 
-function uploadDataWithRetry(lastTry=false, endTest=true ,retryCount = 5, delay = 1000) {
+function getProlificId(){
     const urlParams = new URL(location.href).searchParams;
-    let prolific_id = urlParams.get('PROLIFIC_PID');
+// Get parameters by name
+    return urlParams.get('PROLIFIC_PID')
+}
 
-    return new Promise((resolve, reject) => {
-        function attemptUpload(remainingRetries) {
-            $.ajax({
-                url: 'https://hss74dd1ed.execute-api.us-east-1.amazonaws.com/dev/',
-                type: 'POST',
-                contentType: 'application/json',
-                data: JSON.stringify({
-                    "subject_id": `${prolific_id}`,
-                    "bucket": `${BUCKET_NAME}`,
-                    "exp_data": JSON.stringify(data)
-                }),
-                success: function(response) {
-                    console.log('Data uploaded successfully:', response);
-                    resolve(response); // Resolve the promise on success
-                    if(endTest) {
-                        window.location.href = getRedirectionUrl();
-                    }
-                },
-                error: function(xhr, status, error) {
-                    console.error(`Error uploading data (${remainingRetries} retries left):`, error);
-                    if (remainingRetries > 0) {
-                        setTimeout(() => {
-                            attemptUpload(remainingRetries - 1); // Retry with reduced retry count
-                        }, delay);
-                    }
-                }
-            });
+function saveData() {
+    // Retrieve data from jsPsych
+    //let subject = getUrlDetails()
+    let subject = getProlificId();
+    // Make a POST request to the Lambda function or API Gateway endpoint
+    $.ajax({
+        url: 'https://hss74dd1ed.execute-api.us-east-1.amazonaws.com/dev/',
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({
+            "subject_id": `${subject}`,
+            "bucket": `${BUCKET_NAME}`,
+            "exp_data":  JSON.stringify(JSON.stringify(items))
+        }),
+        success: function(response) {
+            console.log('Data uploaded successfully:', response);
+        },
+        error: function(xhr, status, error) {
+            console.error('Error uploading data:', error);
         }
-
-        attemptUpload(retryCount); // Start the upload process
     });
 }
