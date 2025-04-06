@@ -95,7 +95,6 @@ function submitData() {
 function uploadDataWithRetry(lastTry=false, endTest=true ,retryCount = 5, delay = 1000) {
     const urlParams = new URL(location.href).searchParams;
     let prolific_id = urlParams.get('PROLIFIC_PID');
-    let data = jsPsych.data.get().json(); // Get data as JSON string
 
     return new Promise((resolve, reject) => {
         function attemptUpload(remainingRetries) {
