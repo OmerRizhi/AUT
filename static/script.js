@@ -18,7 +18,7 @@ const BUCKET_NAME = "verbal-fluency-2025";
 
 function startGame() {
     const queryParams = new URLSearchParams(window.location.search);
-    const timeLimit = parseInt(queryParams.get("time")) || 20;
+    const timeLimit = parseInt(queryParams.get("time")) || 120;
 
     const inputArea = document.getElementById("input-area");
     for (let i = 0; i < 100; i++) {
