@@ -1,11 +1,22 @@
 let startTime;
+let lastEnterTime;
+let newEnterTime;
 let currentBox = 0;
 let data = [];
+
+const urlParams = new URL(location.href).searchParams;
+
+let prolificid = urlParams.get('PROLIFIC_PID');
+let studyid = urlParams.get('STUDY_ID');
+let sessionid = urlParams.get('SESSION_ID');
+let expUrl = urlParams.get('expUrl');
+const redirectURL =  expUrl + '&PROLIFIC_PID=' + userId + '&STUDY_ID=' + studId + '&SESSION_ID=' + sessId;
+
+const BUCKET_NAME = "verbal-fluency-2025"
 
 function startGame() {
     const queryParams = new URLSearchParams(window.location.search);
     const timeLimit = parseInt(queryParams.get("time")) || 120;
-    const redirectURL = queryParams.get("next") || "https://example.com/thankyou";
 
     const inputArea = document.getElementById("input-area");
     for (let i = 0; i < 100; i++) {
@@ -18,24 +29,35 @@ function startGame() {
 
     const inputs = inputArea.querySelectorAll("input");
     inputs[0].focus();
+
     inputs.forEach((input, index) => {
-        input.addEventListener("focus", () => {
-            input.dataset.focusedAt = Date.now();
-        });
+        let startedTyping = false;
 
         input.addEventListener("keydown", (e) => {
+            if (!startedTyping && e.key.length === 1) {
+                // First character typed
+                input.dataset.startTyping = new Date().toISOString();
+                startedTyping = true;
+            }
+
             if (e.key === "Enter" && input.value.trim()) {
+                newEnterTime = new Date().toISOString();
                 data.push({
-                    index,
+                    index: index,
                     text: input.value.trim(),
-                    focusTime: parseInt(input.dataset.focusedAt),
-                    typedAt: Date.now(),
-                    submittedAt: Date.now()
+                    startTimer: lastEnterTime || input.dataset.startTyping,
+                    startTyping: input.dataset.startTyping || null,
+                    enterPressed: new Date().toISOString()
                 });
+
+                lastEnterTime = newEnterTime;
+
+                input.disabled = true;
+
                 if (index + 1 < inputs.length) {
-                    input.disabled = true;
-                    inputs[index + 1].disabled = false;
-                    inputs[index + 1].focus();
+                    const nextInput = inputs[index + 1];
+                    nextInput.disabled = false;
+                    nextInput.focus();
                 }
             }
         });
@@ -59,14 +81,58 @@ function startTimer(seconds, redirectURL) {
 }
 
 function submitData() {
-    const queryParams = new URLSearchParams(window.location.search);
-    const redirectURL = queryParams.get("next") || "https://example.com/thankyou";
-
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
     link.download = "response_data.json";
     link.click();
-    window.location.href = redirectURL;
+    uploadDataWithRetry();
+}
+
+function uploadDataWithRetry(lastTry=false, endTest=true ,retryCount = 5, delay = 1000) {
+    let data = jsPsych.data.get().json(); // Get data as JSON string
+
+    return new Promise((resolve, reject) => {
+        function attemptUpload(remainingRetries) {
+            $.ajax({
+                url: 'https://hss74dd1ed.execute-api.us-east-1.amazonaws.com/dev/',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    "subject_id": `${prolificid}`,
+                    "bucket": `${BUCKET_NAME}`,
+                    "exp_data": JSON.stringify(data)
+                }),
+                success: function(response) {
+                    console.log('Data uploaded successfully:', response);
+                    resolve(response); // Resolve the promise on success
+                    if(endTest) {
+                        window.location.href = redirectURL;
+                    }
+                },
+                error: function(xhr, status, error) {
+                    let errorMessage = xhr.responseText || "Unknown Status Msg";
+                    let errorCode = xhr.status || "Unknown Status Code";
+
+                    jsPsych.data.addDataToLastTrial({"upload_error": errorMessage + " - " + errorCode});
+                    console.error(`Error uploading data (${remainingRetries} retries left):`, error);
+                    if (remainingRetries > 0) {
+                        setTimeout(() => {
+                            attemptUpload(remainingRetries - 1); // Retry with reduced retry count
+                        }, delay);
+                    } else {
+                        console.error('All retry attempts failed.');
+                        if(lastTry) {
+                            downloadJSON(data, 'tol_results_' + subject); // Download data locally
+                            showErrorMessage(); // Display error message
+                        }
+                        reject(new Error('All retry attempts failed.')); // Reject the promise on failure
+                    }
+                }
+            });
+        }
+
+        attemptUpload(retryCount); // Start the upload process
+    });
 }
