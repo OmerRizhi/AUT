@@ -2,7 +2,7 @@
 const BUCKET_NAME = "verbal-fluency-2025";
 let data = [];
 let timerInterval;
-const gameDuration = 2 //* 60;
+const gameDuration = 2 * 60;
 const colors = ["#fce4ec", "#e3f2fd", "#e8f5e9", "#fff3e0", "#f3e5f5", "#e0f2f1"];
 let currentClusterColorIndex = 1;
 let clustered = [];
