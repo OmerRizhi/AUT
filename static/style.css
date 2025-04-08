@@ -1,72 +1,87 @@
 body {
     font-family: Arial, sans-serif;
-    background-color: #f5f7fa;
+    background-color: #f9f9f9;
     margin: 0;
-    padding: 2em;
+    padding: 2rem;
     color: #333;
 }
 
-.box {
-    background: white;
-    max-width: 700px;
+#instruction, #input-area, #clustering-phase {
+    max-width: 800px;
     margin: auto;
-    padding: 2em;
-    box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
-    border-radius: 12px;
-    text-align: center;
+    background: white;
+    padding: 2rem;
+    border-radius: 14px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+input[type="text"] {
+    width: 100%;
+    padding: 0.6rem;
+    font-size: 1rem;
+    margin-bottom: 0.8rem;
+    border: 1px solid #ccc;
+    border-radius: 8px;
 }
 
 button {
-    background-color: #4CAF50;
-    border: none;
+    background-color: #1976d2;
     color: white;
-    padding: 1em 2em;
-    font-size: 1em;
-    border-radius: 6px;
+    padding: 0.6rem 1.2rem;
+    font-size: 1rem;
+    border: none;
+    border-radius: 8px;
     cursor: pointer;
 }
 
+button:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+}
+
+.cluster-list {
+    list-style: none;
+    padding: 0;
+}
+
+.cluster-item {
+    padding: 10px;
+    border: 1px solid #ccc;
+    margin: 6px 0;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.cluster-item:hover {
+    background-color: #f0f0f0;
+}
+
+#instructions-box {
+    max-width: 800px;
+    margin: auto;
+    margin-bottom: 30px;
+    padding: 20px;
+    background-color: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    font-size: 1.1rem;
+}
+
+#game-form {
+    max-width: 600px;
+    margin: auto;
+}
+
 #timer {
-    font-size: 1.5em;
     position: fixed;
     top: 20px;
-    right: 30px;
-    color: #222;
-}
-
-#input-area {
-    margin-top: 2em;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
-
-input {
-    width: 60%;
-    padding: 0.8em;
-    margin: 0.5em 0;
-    border: 1px solid #ccc;
-    border-radius: 6px;
-    font-size: 1em;
-}
-
-.popup-content {
+    right: 40px;
     background: white;
-    padding: 2em;
+    padding: 10px 20px;
     border-radius: 10px;
-    text-align: center;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    font-size: 1.5rem;
+    z-index: 1000;
 }
 
-#popup {
-    display: none;
-    position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    background: rgba(0,0,0,0.3);
-    align-items: center;
-    justify-content: center;
-}
-
-#popup.show {
-    display: flex;
-}

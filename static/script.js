@@ -1,35 +1,22 @@
-let startTime;
-let lastEnterTime;
-let newEnterTime;
-let currentBox = 0;
-let items = [];
-
-const urlParams = new URL(location.href).searchParams;
-
-function getRedirectionUrl() {
-    let prolific_id = urlParams.get('PROLIFIC_PID');
-    let study_id = urlParams.get('STUDY_ID');
-    let session_id = urlParams.get('SESSION_ID');
-    let expUrl = urlParams.get('expUrl');
-    return expUrl + '&PROLIFIC_PID=' + prolific_id + '&STUDY_ID=' + study_id + '&SESSION_ID=' + session_id;
-}
+// === Variables ===
 const BUCKET_NAME = "verbal-fluency-2025";
+let data = [];
+let timerInterval;
+const gameDuration = 2 //* 60;
+const colors = ["#fce4ec", "#e3f2fd", "#e8f5e9", "#fff3e0", "#f3e5f5", "#e0f2f1"];
+let currentClusterColorIndex = 1;
+let clustered = [];
+let selectedStartIndex = null;
 
-
+// === Game Start ===
 function startGame() {
-    const queryParams = new URLSearchParams(window.location.search);
-    const timeLimit = parseInt(queryParams.get("time")) || 120;
+    document.getElementById("instruction").style.display = "none";
+    document.getElementById("input-area").style.display = "block";
+    document.getElementById("timer").style.display = "block";
 
     const inputArea = document.getElementById("input-area");
-    for (let i = 0; i < 100; i++) {
-        const input = document.createElement("input");
-        input.type = "text";
-        input.dataset.index = i;
-        input.disabled = i !== 0;
-        inputArea.appendChild(input);
-    }
-
     const inputs = inputArea.querySelectorAll("input");
+    inputs[0].disabled = false;
     inputs[0].focus();
 
     inputs.forEach((input, index) => {
@@ -37,58 +24,165 @@ function startGame() {
 
         input.addEventListener("keydown", (e) => {
             if (!startedTyping && e.key.length === 1) {
-                // First character typed
                 input.dataset.startTyping = new Date().toISOString();
                 startedTyping = true;
             }
 
             if (e.key === "Enter" && input.value.trim()) {
-                newEnterTime = new Date().toISOString();
-                items.push({
+                data.push({
                     index: index,
                     text: input.value.trim(),
-                    startTimer: lastEnterTime || input.dataset.startTyping,
                     startTyping: input.dataset.startTyping || null,
                     enterPressed: new Date().toISOString()
                 });
 
-                lastEnterTime = newEnterTime;
-
                 input.disabled = true;
-
                 if (index + 1 < inputs.length) {
-                    const nextInput = inputs[index + 1];
-                    nextInput.disabled = false;
-                    nextInput.focus();
+                    inputs[index + 1].disabled = false;
+                    inputs[index + 1].focus();
                 }
             }
         });
     });
 
-    startTimer(timeLimit, getRedirectionUrl());
+    startTimer(gameDuration);
 }
 
-function startTimer(seconds, redirectURL) {
-    const timerEl = document.getElementById("timer");
-    let remaining = seconds;
-    const interval = setInterval(() => {
-        const min = String(Math.floor(remaining / 60)).padStart(2, '0');
-        const sec = String(remaining % 60).padStart(2, '0');
-        timerEl.textContent = `${min}:${sec}`;
-        if (--remaining < 0) {
-            clearInterval(interval);
-            document.getElementById("popup").classList.add("show");
+// === Timer ===
+function startTimer(seconds) {
+    const timerDisplay = document.getElementById("timer");
+    let timeLeft = seconds;
+
+    const updateTimer = () => {
+        const minutes = Math.floor(timeLeft / 60);
+        const secs = timeLeft % 60;
+        timerDisplay.textContent = `${minutes}:${secs.toString().padStart(2, '0')}`;
+        timeLeft--;
+
+        if (timeLeft < 0) {
+            clearInterval(timerInterval);
+            timerDisplay.textContent = "0:00";
+            endGame();
         }
-    }, 1000);
+    };
+
+    updateTimer();
+    timerInterval = setInterval(updateTimer, 1000);
 }
 
+// === End Game & Clustering ===
+function endGame() {
+    alert("Time is up!");
+    document.getElementById("input-area").style.display = "none";
+    document.getElementById("timer").style.display = "none";
+    startClustering();
+}
+
+function startClustering() {
+    document.getElementById("clustering-phase").style.display = "block";
+    const clusterUl = document.getElementById("cluster-list");
+
+    data.forEach((item, index) => {
+        const li = document.createElement("li");
+        li.textContent = `${index + 1}. ${item.text}`;
+        li.dataset.index = index;
+        li.classList.add("cluster-item");
+        clusterUl.appendChild(li);
+    });
+
+    document.querySelectorAll(".cluster-item").forEach((li) => {
+        li.addEventListener("click", () => handleClusterClick(li));
+    });
+}
+
+function handleClusterClick(itemEl) {
+    const idx = parseInt(itemEl.dataset.index);
+
+    // If clicked item is already clustered → uncluster the group
+    if (clustered[idx]) {
+        const clusterId = clustered[idx];
+        // Loop through all items in the cluster and reset them
+        document.querySelectorAll(".cluster-item").forEach((el) => {
+            console.log(el.dataset.index);
+            const elIdx = parseInt(el.dataset.index);
+            if (clustered[elIdx] === clusterId) {
+                el.style.backgroundColor = ""; // Reset background color
+                delete clustered[elIdx]; // Remove from cluster
+            }
+        });
+        selectedStartIndex = null; // Reset start index when un-clustered
+        return; // Exit function if already clustered
+    }
+
+    // Selecting first item (start of cluster)
+    if (selectedStartIndex === null) {
+        selectedStartIndex = idx;
+        itemEl.style.backgroundColor = "#ddd"; // Mark start item
+        console.log(clustered);
+        return;
+    }
+
+    // Selecting end item (end of cluster) → cluster all in range
+    const start = Math.min(selectedStartIndex, idx);
+    const end = Math.max(selectedStartIndex, idx);
+    const color = colors[currentClusterColorIndex % colors.length];
+
+    // Loop over the range to set the cluster and background color
+    for (let i = start; i <= end; i++) {
+        const el = document.querySelector(`[data-index='${i}']`);
+        el.style.backgroundColor = color; // Set background color for cluster
+        clustered[i] = currentClusterColorIndex; // Store cluster index
+    }
+
+    // Reset selected start index and increment cluster color
+    selectedStartIndex = null;
+    currentClusterColorIndex++;
+
+    // Enable submit button when all items are clustered
+    if (Object.keys(clustered).length === data.length) {
+        document.getElementById("submit-clusters").disabled = false;
+    }
+}
+
+
+// === Submit ===
+document.getElementById("submit-clusters").addEventListener("click", () => {
+    const clusterMap = {};
+
+    Object.entries(clustered).forEach(([index, clusterId]) => {
+        if (!clusterMap[clusterId]) clusterMap[clusterId] = [];
+        clusterMap[clusterId].push(data[parseInt(index)]);
+    });
+
+    const finalClusters = Object.entries(clusterMap).map(([id, items]) => ({
+        clusterId: parseInt(id),
+        items: items
+    }));
+
+    console.log("Final Clusters:", finalClusters);
+    data = finalClusters;
+    uploadDataWithRetry();
+    alert("Thanks! Clusters saved.");
+
+});
+
+
+// === upload to S3 ===
+
+function getRedirectionUrl() {
+    const urlParams = new URL(location.href).searchParams;
+    let prolific_id = urlParams.get('PROLIFIC_PID');
+    let study_id = urlParams.get('STUDY_ID');
+    let session_id = urlParams.get('SESSION_ID');
+    let expUrl = urlParams.get('expUrl');
+    return expUrl + '&PROLIFIC_PID=' + prolific_id + '&STUDY_ID=' + study_id + '&SESSION_ID=' + session_id;
+}
 
 function getProlificId(){
     const urlParams = new URL(location.href).searchParams;
-// Get parameters by name
+    // Get parameters by name
     return urlParams.get('PROLIFIC_PID')
 }
-
 
 function uploadDataWithRetry(lastTry=false, endTest=true ,retryCount = 5, delay = 1000) {
     let subject = getProlificId();
@@ -102,7 +196,7 @@ function uploadDataWithRetry(lastTry=false, endTest=true ,retryCount = 5, delay 
                 data: JSON.stringify({
                     "subject_id": `${subject}`,
                     "bucket": `${BUCKET_NAME}`,
-                    "exp_data": JSON.stringify(JSON.stringify(items)) // no idea why it needs to double stringify, but it won't work otherwise.
+                    "exp_data": JSON.stringify(JSON.stringify(data)) // no idea why it needs to double stringify, but it won't work otherwise.
                 }),
                 success: function(response) {
                     console.log('Data uploaded successfully:', response);
