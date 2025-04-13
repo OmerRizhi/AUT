@@ -37,39 +37,21 @@
 <div id="clustering-phase" style="display: none; padding-top: 2rem;">
     <h2>Group Your Items</h2>
     <p>
-        You’ll now see the list of items you wrote earlier. Your task is to group them in ways that make sense to you.<br><br>
-        How to group items: <br>
-        • Click the first item, then click the last item — all items in between will be grouped together.<br>
-        • You can only group items that are next to each other in the list.<br>
-        • To group just one item, click it twice.<br>
-        • To remove a group, click any item in that group, and the group will be undone.<br><br>
-        You can make as many groups as you like.<br><br>
-        When you’re done, click Submit<br>
+        <br>You’ll now see the list of answers you wrote earlier. Group them into clusters according to the themes or connections you had in mind.
+        <br>
+        <br>How to group items:
+        <br>• Click the first item in the cluster, then click the last item in the cluster — all items between these two selections will be grouped together.
+        <br>• You can only group animals that are adjacent to each other in the list.
+        <br>• If an animal should be in a group by itself, click it twice.
+        <br>• To ungroup a cluster and regroup it differently, click any animal within that group — the grouping will then be reset.
+        <br>
+        <br>You can make as many groups as you like. There are no right or wrong answers.
+        <br>
+        <br>When you’re done, click <strong>Submit</strong>.
     </p>
     <ul id="cluster-list" class="cluster-list"></ul>
-    <button id="submit-clusters" disabled>Submit Clustering</button>
+    <button id="submit-clusters" disabled>Submit</button>
 </div>
-
-<!--<script>-->
-<!--    document.addEventListener("DOMContentLoaded", () => {-->
-<!--        const { categoryIndex, numRounds, enableClustering } = getUrlParams();-->
-<!--        const category = [categoryIndex];-->
-
-<!--        const instructionsBox = document.getElementById("instructions-box");-->
-<!--        if (instructionsBox) {-->
-<!--            instructionsBox.innerHTML = `Please write down all items from the category: <strong>${category}</strong>. Press <strong>Enter</strong> after each one.`;-->
-<!--        }-->
-
-<!--        // Store values globally-->
-<!--        window.currentCategory = category;-->
-<!--        window.numRounds = numRounds;-->
-<!--        window.enableClustering = enableClustering;-->
-
-<!--        console.log("Category:", category);-->
-<!--        console.log("Rounds:", numRounds);-->
-<!--        console.log("Clustering Enabled:", enableClustering);-->
-<!--    });-->
-<!--</script>-->
 
 <script src="static/script.js"></script>
 </body>
