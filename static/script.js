@@ -3,6 +3,7 @@ const BUCKET_NAME = "verbal-fluency-2025";
 let data = [];
 let results = [];
 let timerInterval;
+const gameDuration = 10;
 const inputsPerRound = 30;
 const colors = ["#fce4ec", "#e0f2f1", "#f3e5f5", "#f0f4c3", "#e3f2fd", "#ffe0b2", "#c8e6c9", "#f8bbd0",
     "#b2dfdb", "#e1bee7", "#dcedc8", "#bbdefb", "#fff3e0", "#e6ee9c", "#e8f5e9", "#f3f5f7", "#f5f5f5"];
@@ -13,7 +14,7 @@ let clustered = [];
 let selectedStartIndex = null;
 let currentRound = 0;
 
-const {categoryIndex, numRounds, enableClustering, gameDuration} = getUrlParams()
+const {categoryIndex, numRounds, enableClustering} = getUrlParams()
 
 // === Game Start ===
 function startGame() {
@@ -96,7 +97,7 @@ function getUrlParams() {
     const clusteringParam = urlParams.get("clustering");
     const enableClustering = (clusteringParam && clusteringParam.toLowerCase() === "true");
 
-    return {categoryIndex, numRounds, enableClustering, time}
+    return {categoryIndex, numRounds, enableClustering}
 }
 
 // === Timer ===
