@@ -1,23 +1,62 @@
 // === Variables ===
 const BUCKET_NAME = "verbal-fluency-2025";
 let data = [];
+let results = [];
 let timerInterval;
-const gameDuration = 2 * 60;
-const colors = ["#fce4ec", "#e3f2fd", "#e8f5e9", "#fff3e0", "#f3e5f5", "#e0f2f1"];
+const gameDuration = 120;
+const inputsPerRound = 30;
+const colors = ["#fce4ec", "#e0f2f1", "#f3e5f5", "#f0f4c3", "#e3f2fd", "#ffe0b2", "#c8e6c9", "#f8bbd0",
+    "#b2dfdb", "#e1bee7", "#dcedc8", "#bbdefb", "#fff3e0", "#e6ee9c", "#e8f5e9", "#f3f5f7", "#f5f5f5"];
+const categories = ["Animals", "Furniture", "Electronics", "Plants"]
+let category;
 let currentClusterColorIndex = 1;
 let clustered = [];
 let selectedStartIndex = null;
+let currentRound = 0;
+
+const {categoryIndex, numRounds, enableClustering} = getUrlParams()
 
 // === Game Start ===
 function startGame() {
     document.getElementById("instruction").style.display = "none";
     document.getElementById("input-area").style.display = "block";
     document.getElementById("timer").style.display = "block";
+    updateCategoryInDOM();
 
-    const inputArea = document.getElementById("input-area");
-    const inputs = inputArea.querySelectorAll("input");
-    inputs[0].disabled = false;
-    inputs[0].focus();
+    createInputFields(inputsPerRound);
+    setupInputEvents();
+
+    startTimer(gameDuration);
+}
+
+function updateCategoryInDOM() {
+    category = categories[(categoryIndex + currentRound) % categories.length];
+    const categoryElement = document.getElementById("category-name");
+    if (categoryElement) {
+        categoryElement.textContent = category;
+    }
+}
+
+function createInputFields() {
+
+    const form = document.getElementById("game-form");
+    form.innerHTML = ""; // Clear previous round inputs
+    for (let i = 0; i < 100; i++) {
+        const input = document.createElement("input");
+        input.type = "text";
+        input.disabled = true;
+        input.placeholder = "";
+        form.appendChild(input);
+        form.appendChild(document.createElement("br"));
+    }
+}
+
+function setupInputEvents() {
+    const inputs = document.querySelectorAll("#input-area input");
+    if (inputs.length > 0) {
+        inputs[0].disabled = false;
+        inputs[0].focus();
+    }
 
     inputs.forEach((input, index) => {
         let startedTyping = false;
@@ -30,6 +69,7 @@ function startGame() {
 
             if (e.key === "Enter" && input.value.trim()) {
                 data.push({
+                    round: currentRound,
                     index: index,
                     text: input.value.trim(),
                     startTyping: input.dataset.startTyping || null,
@@ -44,8 +84,19 @@ function startGame() {
             }
         });
     });
+}
 
-    startTimer(gameDuration);
+function getUrlParams() {
+    const urlParams = new URLSearchParams(window.location.search);
+
+    const categoryIndex = parseInt(urlParams.get("category"), 10) || 0;
+    const rounds = parseInt(urlParams.get("numRounds"), 10);
+    const numRounds = (!isNaN(rounds) && rounds >= 1) ? rounds : 1;
+
+    const clusteringParam = urlParams.get("clustering");
+    const enableClustering = (clusteringParam && clusteringParam.toLowerCase() === "true");
+
+    return {categoryIndex, numRounds, enableClustering}
 }
 
 // === Timer ===
@@ -62,7 +113,7 @@ function startTimer(seconds) {
         if (timeLeft < 0) {
             clearInterval(timerInterval);
             timerDisplay.textContent = "0:00";
-            endGame();
+            endRound();
         }
     };
 
@@ -70,17 +121,67 @@ function startTimer(seconds) {
     timerInterval = setInterval(updateTimer, 1000);
 }
 
+function endRound() {
+    // If clustering is enabled, start clustering phase
+    console.log("endRound");
+    if (enableClustering) {
+        startClustering();
+    }
+    else{
+        submitClusters()
+    }
+}
+
+function nextRound() {
+    // Hide the clustering phase UI when starting the next round
+    alert("Get ready for next round");
+    currentRound++;
+    document.getElementById("clustering-phase").style.display = "none";
+    console.log("nextRound: ", currentRound);
+
+    // Reset clustering state
+    clustered = [];
+    selectedStartIndex = null;
+    currentClusterColorIndex = 1;
+
+    // Show input area and timer for the new round
+    document.getElementById("input-area").style.display = "block";
+    document.getElementById("timer").style.display = "block";
+
+    // Reset the input fields and set up events for the next round
+    updateCategoryInDOM();
+    createInputFields(inputsPerRound);
+    setupInputEvents();
+
+    // Start the timer for the new round
+    startTimer(gameDuration);
+}
+
 // === End Game & Clustering ===
 function endGame() {
-    alert("Time is up!");
     document.getElementById("input-area").style.display = "none";
     document.getElementById("timer").style.display = "none";
-    startClustering();
+
+    uploadDataWithRetry();
+    alert("End of game, thanks for playing!");
+
 }
 
 function startClustering() {
+    // Hide the input area and timer during clustering
+    document.getElementById("input-area").style.display = "none";
+    document.getElementById("timer").style.display = "none";
+
+    // Show the clustering phase UI
     document.getElementById("clustering-phase").style.display = "block";
+
     const clusterUl = document.getElementById("cluster-list");
+
+    // Clear previous clustering list before adding new items
+    clusterUl.innerHTML = "";
+
+    // Add each item from the data to the clustering list
+    console.log("data:", data);
 
     data.forEach((item, index) => {
         const li = document.createElement("li");
@@ -90,6 +191,7 @@ function startClustering() {
         clusterUl.appendChild(li);
     });
 
+    // Add event listeners for clustering item clicks
     document.querySelectorAll(".cluster-item").forEach((li) => {
         li.addEventListener("click", () => handleClusterClick(li));
     });
@@ -98,77 +200,87 @@ function startClustering() {
 function handleClusterClick(itemEl) {
     const idx = parseInt(itemEl.dataset.index);
 
-    // If clicked item is already clustered → uncluster the group
     if (clustered[idx]) {
         const clusterId = clustered[idx];
-        // Loop through all items in the cluster and reset them
         document.querySelectorAll(".cluster-item").forEach((el) => {
-            console.log(el.dataset.index);
             const elIdx = parseInt(el.dataset.index);
             if (clustered[elIdx] === clusterId) {
-                el.style.backgroundColor = ""; // Reset background color
-                delete clustered[elIdx]; // Remove from cluster
+                el.style.backgroundColor = "";
+                delete clustered[elIdx];
             }
         });
-        selectedStartIndex = null; // Reset start index when un-clustered
-        return; // Exit function if already clustered
-    }
-
-    // Selecting first item (start of cluster)
-    if (selectedStartIndex === null) {
-        selectedStartIndex = idx;
-        itemEl.style.backgroundColor = "#ddd"; // Mark start item
-        console.log(clustered);
+        selectedStartIndex = null;
         return;
     }
 
-    // Selecting end item (end of cluster) → cluster all in range
-    const start = Math.min(selectedStartIndex, idx);
-    const end = Math.max(selectedStartIndex, idx);
-    const color = colors[currentClusterColorIndex % colors.length];
-
-    // Loop over the range to set the cluster and background color
-    for (let i = start; i <= end; i++) {
-        const el = document.querySelector(`[data-index='${i}']`);
-        el.style.backgroundColor = color; // Set background color for cluster
-        clustered[i] = currentClusterColorIndex; // Store cluster index
+    if (selectedStartIndex === null) {
+        selectedStartIndex = idx;
+        itemEl.style.backgroundColor = "#ddd";
+        return;
     }
 
-    // Reset selected start index and increment cluster color
+    const start = Math.min(selectedStartIndex, idx);
+    const end = Math.max(selectedStartIndex, idx);
+    const color = colors[(currentClusterColorIndex  + currentRound*currentRound )% colors.length];
+
+    for (let i = start; i <= end; i++) {
+        const el = document.querySelector(`[data-index='${i}']`);
+        el.style.backgroundColor = color;
+        clustered[i] = currentClusterColorIndex;
+    }
+
     selectedStartIndex = null;
     currentClusterColorIndex++;
 
-    // Enable submit button when all items are clustered
     if (Object.keys(clustered).length === data.length) {
         document.getElementById("submit-clusters").disabled = false;
     }
 }
 
-
 // === Submit ===
-document.getElementById("submit-clusters").addEventListener("click", () => {
+
+document.getElementById("submit-clusters").addEventListener("click", submitClusters);
+
+function submitClusters(){
     const clusterMap = {};
+    let finalClusters;
 
     Object.entries(clustered).forEach(([index, clusterId]) => {
         if (!clusterMap[clusterId]) clusterMap[clusterId] = [];
         clusterMap[clusterId].push(data[parseInt(index)]);
     });
 
-    const finalClusters = Object.entries(clusterMap).map(([id, items]) => ({
-        clusterId: parseInt(id),
-        items: items
-    }));
+    if(enableClustering) {
+        finalClusters = Object.entries(clusterMap).map(([id, items]) => ({
+            clusterId: parseInt(id),
+            items: items
+        }));
+    } else {
+        finalClusters = [{clusterId: null, items: data}];
+    }
 
-    console.log("Final Clusters:", finalClusters);
-    data = finalClusters;
-    uploadDataWithRetry();
-    alert("Thanks! Clusters saved.");
+    const exportData = {
+        RoundIndex: currentRound,
+        category: category,
+        clusters: finalClusters
+    };
 
-});
+    results.push(exportData);
+
+    console.log(results);
+    data = []
+
+    uploadDataWithRetry(false, false);
+    if(currentRound + 1 < numRounds) {
+        nextRound();
+    }
+    else{
+        endGame()
+    }
+}
 
 
 // === upload to S3 ===
-
 function getRedirectionUrl() {
     const urlParams = new URL(location.href).searchParams;
     let prolific_id = urlParams.get('PROLIFIC_PID');
@@ -180,8 +292,7 @@ function getRedirectionUrl() {
 
 function getProlificId(){
     const urlParams = new URL(location.href).searchParams;
-    // Get parameters by name
-    return urlParams.get('PROLIFIC_PID')
+    return urlParams.get('PROLIFIC_PID');
 }
 
 function uploadDataWithRetry(lastTry=false, endTest=true ,retryCount = 5, delay = 1000) {
@@ -196,11 +307,11 @@ function uploadDataWithRetry(lastTry=false, endTest=true ,retryCount = 5, delay 
                 data: JSON.stringify({
                     "subject_id": `${subject}`,
                     "bucket": `${BUCKET_NAME}`,
-                    "exp_data": JSON.stringify(JSON.stringify(data)) // no idea why it needs to double stringify, but it won't work otherwise.
+                    "exp_data": JSON.stringify(JSON.stringify(results, null, 2))
                 }),
                 success: function(response) {
                     console.log('Data uploaded successfully:', response);
-                    resolve(response); // Resolve the promise on success
+                    resolve(response);
                     if(endTest) {
                         window.location.href = getRedirectionUrl();
                     }
@@ -209,13 +320,13 @@ function uploadDataWithRetry(lastTry=false, endTest=true ,retryCount = 5, delay 
                     console.error(`Error uploading data (${remainingRetries} retries left):`, error);
                     if (remainingRetries > 0) {
                         setTimeout(() => {
-                            attemptUpload(remainingRetries - 1); // Retry with reduced retry count
+                            attemptUpload(remainingRetries - 1);
                         }, delay);
                     }
                 }
             });
         }
 
-        attemptUpload(retryCount); // Start the upload process
+        attemptUpload(retryCount);
     });
 }

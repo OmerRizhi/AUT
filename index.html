@@ -25,32 +25,51 @@
     </button>
 </div>
 
-
 <div id="timer" style="display: none; position: fixed; top: 20px; right: 40px; background: white; padding: 10px 20px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); font-size: 1.5rem; z-index: 1000;"></div>
+
 <div id="input-area" style="display: none;">
     <div id="instructions-box" style="max-width: 800px; margin: auto; margin-bottom: 30px; padding: 20px; background-color: white; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); font-size: 1.1rem;">
-        Please write down all items from the category: <strong>Animals</strong>. Press <strong>Enter</strong> after each one.
+        Please write down all items from the category: <strong id="category-name">Category</strong>. Press <strong>Enter</strong> after each one.
     </div>
-    <form id="game-form" style="max-width: 800px; margin: auto;">
-        <!-- Generate 70 input fields -->
-        <script>
-            for (let i = 0; i < 100; i++) {
-                document.write(`<input type="text" disabled placeholder="" /><br />`);
-            }
-        </script>
-    </form>
+    <form id="game-form" style="max-width: 800px; margin: auto;"></form>
 </div>
 
-
 <div id="clustering-phase" style="display: none; padding-top: 2rem;">
-    <h2>Group Your Items into Clusters</h2>
-    <p>Click the first item of a group, then the last — all items between will be clustered together. Only consecutive items can be grouped. To form a cluster with a single item, click it twice.<br>
-        Click any item in an existing cluster to remove that cluster. Repeat to form as many clusters as needed.<br><br>
-        Press Submit when you are done.<br>
-        </p>
+    <h2>Group Your Items</h2>
+    <p>
+        You’ll now see the list of items you wrote earlier. Your task is to group them in ways that make sense to you.<br><br>
+        How to group items: <br>
+        • Click the first item, then click the last item — all items in between will be grouped together.<br>
+        • You can only group items that are next to each other in the list.<br>
+        • To group just one item, click it twice.<br>
+        • To remove a group, click any item in that group, and the group will be undone.<br><br>
+        You can make as many groups as you like.<br><br>
+        When you’re done, click Submit<br>
+    </p>
     <ul id="cluster-list" class="cluster-list"></ul>
     <button id="submit-clusters" disabled>Submit Clustering</button>
 </div>
+
+<!--<script>-->
+<!--    document.addEventListener("DOMContentLoaded", () => {-->
+<!--        const { categoryIndex, numRounds, enableClustering } = getUrlParams();-->
+<!--        const category = [categoryIndex];-->
+
+<!--        const instructionsBox = document.getElementById("instructions-box");-->
+<!--        if (instructionsBox) {-->
+<!--            instructionsBox.innerHTML = `Please write down all items from the category: <strong>${category}</strong>. Press <strong>Enter</strong> after each one.`;-->
+<!--        }-->
+
+<!--        // Store values globally-->
+<!--        window.currentCategory = category;-->
+<!--        window.numRounds = numRounds;-->
+<!--        window.enableClustering = enableClustering;-->
+
+<!--        console.log("Category:", category);-->
+<!--        console.log("Rounds:", numRounds);-->
+<!--        console.log("Clustering Enabled:", enableClustering);-->
+<!--    });-->
+<!--</script>-->
 
 <script src="static/script.js"></script>
 </body>
