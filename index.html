@@ -10,15 +10,10 @@
 <body>
 <div id="instruction" style="text-align: center; max-width: 800px; margin: 60px auto; font-size: 1rem; line-height: 1.6;">
     <p>
-        In the current task, you will be given a category, and will be asked to list as many items from the category as you can. For instance, if the category is instruments, you should list as many instruments as you can recall.
-        <br /><br />
-        You will have <strong>2 minutes</strong> to list as many items from the category as possible.
-        <br /><br />
-        Please rely only on memory, and do not search the Internet for answers.
-        <br /><br />
-        Do not enter the same item twice in one round, and do not list two items that only differentiate in suffix. For example if you list "guitar", do not list "guitars" in the same round.
-        <br /><br />
-        Please click the button below to start.
+        In this task, you will be asked to think of possible uses to a common object. <br>
+        In each trail you will be given an abject and write down of as many uses for it as you can. <br>
+        You will have 2 minutes for each trial. <br>
+        Press Start when you are ready. <br>
     </p>
     <button onclick="startGame()" style="padding: 10px 30px; font-size: 1.2rem; border-radius: 10px; background-color: #4CAF50; color: white; border: none; cursor: pointer;">
         Start
@@ -29,7 +24,9 @@
 
 <div id="input-area" style="display: none;">
     <div id="instructions-box" style="max-width: 800px; margin: auto; margin-bottom: 30px; padding: 20px; background-color: white; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); font-size: 1.1rem;">
-        Please write down all items from the category: <strong id="category-name">Category</strong>. Press <strong>Enter</strong> after each one.
+        You object is: <strong id="category-name">Category</strong>. <br>
+        Please write down as many ways to use the object as possible. <br>
+        Press <strong>Enter</strong> after each one.
     </div>
     <form id="game-form" style="max-width: 800px; margin: auto;"></form>
 </div>
