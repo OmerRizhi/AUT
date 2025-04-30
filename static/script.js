@@ -90,7 +90,7 @@ function getUrlParams() {
     const urlParams = new URLSearchParams(window.location.search);
 
     const categoryIndex = parseInt(urlParams.get("category"), 10) || 0;
-    const rounds = parseInt(urlParams.get("numRounds"), 10) || 3;
+    const rounds = parseInt(urlParams.get("numRounds"), 10) || 3 ;
     const numRounds = (!isNaN(rounds) && rounds >= 1) ? rounds : 1;
     const time = parseInt(urlParams.get("time"), 10) || 120;
 
